@@ -1,210 +1,167 @@
-# 💰 ExpenseFlow — Full-Stack Expense Tracker
+# ExpenseFlow — Expense Tracker
 
-A production-ready expense tracker built with **Node.js + Express + PostgreSQL + JWT Auth**.
+ExpenseFlow is a full-stack expense tracker with a browser-based dashboard and a Node.js/Express API backed by PostgreSQL. It supports account registration, JWT-authenticated expense management, and spending summaries.
 
----
+> **Project status:** This is a learning/portfolio project, not a production-hardened financial application. See the security notes before deploying it publicly.
 
-## ✅ STEP-BY-STEP SETUP GUIDE
+## Features
 
----
+- Register and sign in to an account
+- Create, list, update, and delete expenses
+- Filter expenses by category and date range
+- Paginate expense results and sort by date
+- View total, monthly, and category-based reports
+- Store user passwords as bcrypt hashes
+- Restrict expense queries to the authenticated user
 
-### STEP 1 — Create a FREE PostgreSQL Database (Neon.tech)
+## Tech stack
 
-1. Go to **https://neon.tech** → Sign up for free
-2. Click **"New Project"** → Name it `expense-tracker`
-3. After creation, find the **Connection String** — looks like:
-   ```
-   postgresql://user:password@ep-xyz.region.aws.neon.tech/neondb?sslmode=require
-   ```
-4. **Copy it** — you'll need it in Step 3
+- **Runtime / API:** Node.js 18+, Express
+- **Database:** PostgreSQL (pg)
+- **Authentication:** JSON Web Tokens (jsonwebtoken)
+- **Password hashing:** bcryptjs
+- **Frontend:** HTML, CSS, and JavaScript served from public/
 
----
+## Run locally
 
-### STEP 2 — Download & Install Dependencies
+### Prerequisites
 
-```bash
-# 1. Open a terminal and go into the project folder
+- Node.js 18 or newer and npm
+- A PostgreSQL database (local PostgreSQL or a hosted database such as Neon)
+
+### 1. Clone the repository
+
+~~~bash
+git clone https://github.com/kVishakhha/expense-tracker.git
 cd expense-tracker
+~~~
 
-# 2. Install all packages
+### 2. Install dependencies
+
+~~~bash
 npm install
-```
+~~~
 
----
+### 3. Configure environment variables
 
-### STEP 3 — Configure Environment Variables
+Copy the example file:
 
-```bash
-# Copy the example env file
+**macOS / Linux**
+~~~bash
 cp .env.example .env
-```
+~~~
 
-Now open `.env` in any text editor and fill it in:
+**Windows PowerShell**
+~~~powershell
+Copy-Item .env.example .env
+~~~
 
-```env
-DATABASE_URL=postgresql://your_neon_connection_string_here
-JWT_SECRET=make_up_any_long_random_string_here
-PORT=3000
-```
+Set DATABASE_URL to your PostgreSQL connection string and replace JWT_SECRET with a unique, randomly generated secret. One way to generate a secret is:
 
-**To generate a strong JWT secret, run this in terminal:**
-```bash
+~~~bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-```
+~~~
 
----
+Keep the real .env file private. Never commit database credentials or real JWT secrets.
 
-### STEP 4 — Run the Project Locally
+### 4. Start the server
 
-```bash
+~~~bash
 npm run dev
-```
+~~~
 
-You should see:
-```
-✅ Database tables ready
-🚀 Server running on http://localhost:3000
-```
+The server initializes the database tables at startup and listens on the configured PORT (default: 3000). Open http://localhost:3000 for the dashboard. The health endpoint is GET /api/health.
 
-Open **http://localhost:3000** in your browser — you'll see the dashboard!
+If startup fails, check that PostgreSQL is reachable and DATABASE_URL is valid. The current database initializer logs initialization errors; a successful server start alone does not prove the database is ready.
 
----
+## API reference
 
-### STEP 5 — Test the APIs (Optional, using Postman)
+Base URL for local development: http://localhost:3000.
 
-Import these into Postman:
+### Authentication
 
-#### Signup
-```
-POST http://localhost:3000/api/auth/signup
-Body (JSON): { "name": "John", "email": "john@test.com", "password": "123456" }
-```
+| Method | Endpoint | Authentication | Purpose |
+|---|---|---|---|
+| POST | /api/auth/signup | None | Register an account |
+| POST | /api/auth/login | None | Sign in and receive a JWT |
+| GET | /api/auth/me | Bearer token | Return the current user's profile |
 
-#### Login
-```
-POST http://localhost:3000/api/auth/login
-Body (JSON): { "email": "john@test.com", "password": "123456" }
-```
-👉 Copy the `token` from the response
+Example registration request:
 
-#### Add Expense (requires token)
-```
-POST http://localhost:3000/api/expenses
-Header: Authorization: Bearer <your_token>
-Body: { "amount": 500, "category": "Food", "description": "Lunch", "date": "2024-01-15" }
-```
+~~~bash
+curl -X POST http://localhost:3000/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Demo User","email":"demo@example.com","password":"replace-this-password"}'
+~~~
 
-#### Get Expenses (with filters)
-```
-GET http://localhost:3000/api/expenses?category=Food&page=1&limit=10&sort=desc
-Header: Authorization: Bearer <your_token>
-```
+### Expenses
 
-#### Category Report
-```
-GET http://localhost:3000/api/reports/category?year=2024
-Header: Authorization: Bearer <your_token>
-```
+All expense endpoints require Authorization: Bearer <token>.
 
----
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | /api/expenses | List the current user's expenses |
+| POST | /api/expenses | Create an expense |
+| PUT | /api/expenses/:id | Update an expense owned by the current user |
+| DELETE | /api/expenses/:id | Delete an expense owned by the current user |
 
-### STEP 6 — Deploy to Railway (FREE)
+Supported list query parameters: category, start_date, end_date, page, limit, and sort (asc or desc).
 
-1. **Push code to GitHub first:**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   # Create a repo on github.com, then:
-   git remote add origin https://github.com/yourusername/expense-tracker.git
-   git push -u origin main
-   ```
+Example create request:
 
-2. **Go to https://railway.app** → Sign in with GitHub
+~~~bash
+curl -X POST http://localhost:3000/api/expenses \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":500,"category":"Food","description":"Lunch","date":"2026-10-12"}'
+~~~
 
-3. Click **"New Project"** → **"Deploy from GitHub repo"** → Select your repo
+### Reports
 
-4. Railway auto-detects Node.js and deploys!
+All report endpoints require a Bearer token.
 
-5. **Add environment variables in Railway:**
-   - Go to your project → **Variables** tab
-   - Add: `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | /api/reports/summary | All-time total, current-month total, transaction count |
+| GET | /api/reports/category | Spending totals grouped by category; optional year and month |
+| GET | /api/reports/monthly | Monthly totals; optional year |
 
-6. Your app will be live at `https://your-app.railway.app` 🎉
+## Project structure
 
----
+~~~text
+config/db.js                     PostgreSQL connection and table initialization
+controllers/authController.js    Account registration, login, and profile
+controllers/expenseController.js Expense CRUD and filtering
+controllers/reportController.js  Summary and spending reports
+middleware/authMiddleware.js     JWT verification
+routes/                          API route definitions
+public/index.html                Browser dashboard
+server.js                        Express entry point
+.env.example                     Environment-variable template
+~~~
 
-## 📁 Project Structure
+## Security and limitations
 
-```
-expense-tracker/
-├── config/
-│   └── db.js                  ← PostgreSQL connection + table creation
-├── controllers/
-│   ├── authController.js      ← Signup, Login, Get Me
-│   ├── expenseController.js   ← CRUD operations
-│   └── reportController.js    ← Analytics queries
-├── middleware/
-│   └── authMiddleware.js      ← JWT verification
-├── routes/
-│   ├── authRoutes.js
-│   ├── expenseRoutes.js
-│   └── reportRoutes.js
-├── public/
-│   └── index.html             ← Frontend dashboard
-├── .env.example
-├── .gitignore
-├── package.json
-└── server.js                  ← Entry point
-```
+This repository includes some useful baseline controls: bcrypt password hashing, JWT verification, parameterized SQL for user-supplied values, and ownership checks on expense updates/deletes. These controls do **not** make the application production-ready.
+
+Before a public deployment, address at least the following:
+
+- **CORS:** The server currently allows requests from any origin. Configure an explicit origin allowlist.
+- **Database TLS:** Production PostgreSQL configuration disables certificate verification with rejectUnauthorized: false. Configure certificate validation rather than relying on this setting for production.
+- **Authentication hardening:** Signup currently accepts passwords as short as six characters; add stronger password policy and rate limiting for login/signup.
+- **Configuration validation:** Fail fast if DATABASE_URL or JWT_SECRET is missing or insecure.
+- **Input validation:** Validate pagination bounds, dates, and all request fields consistently.
+- **Operational safety:** Add automated tests, structured logging, and production error handling before deployment.
+
+The repository does not currently define an automated test script in package.json. API examples above are manual smoke-test requests, not evidence of an automated test suite.
+
+## Development
+
+~~~bash
+npm run dev
+~~~
+
+The npm start command starts the server without the development watcher.
 
 ---
-
-## 🔌 API Reference
-
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/signup | Create account |
-| POST | /api/auth/login | Login |
-| GET | /api/auth/me | Get current user |
-
-### Expenses (requires JWT)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/expenses | List expenses (paginated, filterable) |
-| POST | /api/expenses | Add expense |
-| PUT | /api/expenses/:id | Update expense |
-| DELETE | /api/expenses/:id | Delete expense |
-
-**Query params for GET:** `category`, `start_date`, `end_date`, `page`, `limit`, `sort`
-
-### Reports (requires JWT)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/reports/summary | Total, monthly, count |
-| GET | /api/reports/category | Spending by category |
-| GET | /api/reports/monthly | Month-by-month totals |
-
----
-
-## 🧠 Interview Talking Points
-
-- **MVC Architecture**: Routes → Controllers → DB layer (no SQL in routes)
-- **JWT Auth**: Stateless authentication with middleware protection
-- **Foreign Keys**: `expenses.user_id` references `users.id` with CASCADE delete
-- **Aggregation Queries**: `GROUP BY`, `SUM()`, `DATE_TRUNC` for reports
-- **Pagination**: `LIMIT` + `OFFSET` pattern
-- **Filtering**: Dynamic `WHERE` clause construction with parameterized queries (SQL injection safe)
-- **Password Security**: bcrypt hashing (never store plain passwords)
-- **Environment Variables**: Secrets kept out of code via `.env`
-
----
-
-## 🚀 Upgrade Ideas
-
-- [ ] Budget alerts (if spending > budget threshold)
-- [ ] CSV export of expenses
-- [ ] Email notifications
-- [ ] Recurring expense tracking
-- [ ] Multi-currency support
+Built as a learning project by [Vishakha Khetan](https://github.com/kVishakhha).
