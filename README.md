@@ -96,7 +96,7 @@ curl -X POST http://localhost:3000/api/auth/signup \
 
 ### Expenses
 
-All expense endpoints require Authorization: Bearer <token>.
+All expense endpoints require Authorization: Bearer TOKEN.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
