@@ -1,0 +1,34 @@
+name: Node.js checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check server.js
+          find config controllers middleware routes -type f -name '*.js' -print0 | xargs -0 -r -n1 node --check
+
+      - name: Check production dependency advisories
+        run: npm audit --omit=dev --audit-level=high
