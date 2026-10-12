@@ -1,1 +1,4 @@
-node_modules/\n.env\n.env.*\n!.env.example\n*.log\n.DS_Store\nThumbs.db\ncoverage/\n.nyc_output/\n
+node_modules/
+.env
+*.log
+.DS_Store
